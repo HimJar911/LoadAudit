@@ -2,6 +2,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware  # ← ADD THIS
 from app.load_tester import run_load_test
 from typing import List, Dict
 from app.persistence import (
@@ -16,6 +17,15 @@ from app.models import LoadTestRequest, LoadTestResponse, RunSummary
 import asyncio
 
 app = FastAPI(title="LoadAudit", version="0.1.0")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # Allows all origins
+    allow_credentials=True,
+    allow_methods=["*"],  # Allows all methods  
+    allow_headers=["*"],  # Allows all headers
+)
+
 
 # Mount static files
 app.mount("/static", StaticFiles(directory="app/static"), name="static")
