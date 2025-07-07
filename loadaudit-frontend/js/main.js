@@ -10,7 +10,7 @@ let realtimeData = {
 };
 
 // Use the same origin as the frontend (your FastAPI server)
-const API_BASE = window.location.origin;
+const API_BASE = 'https://loadaudit.onrender.com';
 
 // Chart.js default config
 Chart.defaults.color = "#94a3b8";
