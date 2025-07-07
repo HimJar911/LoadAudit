@@ -1,6 +1,4 @@
 from fastapi import FastAPI, HTTPException, Request
-from fastapi.staticfiles import StaticFiles
-from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware  # ← ADD THIS
 from app.load_tester import run_load_test
@@ -25,22 +23,6 @@ app.add_middleware(
     allow_methods=["*"],  # Allows all methods  
     allow_headers=["*"],  # Allows all headers
 )
-
-
-# Mount static files
-app.mount("/static", StaticFiles(directory="app/static"), name="static")
-
-# Setup templates
-templates = Jinja2Templates(directory="app/templates")
-
-# --- FRONTEND ROUTES ---
-
-
-@app.get("/", response_class=HTMLResponse)
-async def read_root(request: Request):
-    """Serve the main frontend page"""
-    return templates.TemplateResponse("index.html", {"request": request})
-
 
 # --- API ROUTES ---
 
