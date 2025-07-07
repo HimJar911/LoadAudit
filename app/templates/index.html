@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LoadAudit - High-Concurrency Load Testing Platform</title>
+    <!-- Load Chart.js with the correct URL -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', path='/css/main.css') }}">
+</head>
+<body>
+    <!-- Header -->
+    <div class="header">
+        <div class="logo">LoadAudit</div>
+        <div class="header-actions">
+            <div class="test-status" id="testStatus">
+                <span class="status-indicator"></span>
+                Test Running...
+            </div>
+            <button class="export-btn" onclick="exportResults()">Export Data</button>
+        </div>
+    </div>
+
+    <!-- Hero Section -->
+    <div class="hero">
+        <h1>LoadAudit</h1>
+        <div class="subtitle">High-Concurrency Load Testing & Fault Diagnosis</div>
+        <div class="tagline">Real-time observability. Chaos-resilient. Production-grade.</div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="container">
+        <!-- Configuration and Results -->
+        <div class="grid">
+            <!-- Load Test Configuration -->
+            <div class="card">
+                <div class="card-header">Load Test Configuration</div>
+                <form id="loadTestForm">
+                    <div class="form-group">
+                        <label class="form-label" for="targetUrl">Target URL</label>
+                        <input type="url" id="targetUrl" class="form-input" required placeholder="https://api.example.com/endpoint">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="numUsers">Number of Users</label>
+                        <input type="number" id="numUsers" class="form-input" min="1" max="1000" value="10">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="duration">Duration (seconds)</label>
+                        <input type="number" id="duration" class="form-input" min="1" max="3600" value="30">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="method">HTTP Method</label>
+                        <select id="method" class="form-select">
+                            <option value="GET">GET</option>
+                            <option value="POST">POST</option>
+                            <option value="PUT">PUT</option>
+                            <option value="DELETE">DELETE</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="headers">Headers (JSON)</label>
+                        <textarea id="headers" class="form-textarea" placeholder='{"Content-Type": "application/json"}'></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="payload">Payload (JSON)</label>
+                        <textarea id="payload" class="form-textarea" placeholder='{"key": "value"}'></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Chaos Mode</label>
+                        <div class="toggle-group">
+                            <div class="toggle-switch" id="chaosToggle" onclick="toggleChaos()"></div>
+                            <span class="toggle-label">Enable random failures</span>
+                        </div>
+                        <div class="chaos-warning hidden" id="chaosWarning">
+                            Chaos mode will introduce random failures to test resilience
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="btn-primary" id="startTestBtn">Start Test</button>
+                </form>
+            </div>
+
+            <!-- Test Results & Monitoring -->
+            <div class="card results-panel">
+                <div class="card-header">Real-Time Monitoring</div>
+                
+                <!-- Live Status -->
+                <div class="live-status" id="liveStatus">
+                    <div class="status-header">
+                        <span class="status-indicator"></span>
+                        <span id="statusText">Initializing test...</span>
+                    </div>
+                    <div class="status-details" id="statusDetails">
+                        Preparing to send requests to target endpoint
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill"></div>
+                    </div>
+                </div>
+
+                <!-- Real-Time Monitoring Dashboard -->
+                <div class="monitoring-dashboard" id="monitoringDashboard">
+                    <div class="dashboard-grid">
+                        <div class="mini-chart">
+                            <div class="chart-header">Response Time</div>
+                            <div class="chart-value" id="realtimeLatency">0.0s</div>
+                            <div class="chart-trend">Last 30 seconds</div>
+                            <div class="chart-container">
+                                <canvas id="latencyChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="mini-chart">
+                            <div class="chart-header">Error Rate</div>
+                            <div class="chart-value" id="realtimeErrors">0.0%</div>
+                            <div class="chart-trend">Live monitoring</div>
+                            <div class="chart-container">
+                                <canvas id="errorChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="mini-chart">
+                            <div class="chart-header">Active Users</div>
+                            <div class="chart-value" id="activeUsers">0</div>
+                            <div class="chart-trend">Concurrent connections</div>
+                            <div class="chart-container">
+                                <canvas id="usersChart"></canvas>
+                            </div>
+                        </div>
+                        
+                        <div class="mini-chart">
+                            <div class="chart-header">Status Codes</div>
+                            <div class="chart-value" id="statusCodes">--</div>
+                            <div class="chart-trend">Distribution</div>
+                            <div class="chart-container">
+                                <canvas id="statusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Large Performance Chart -->
+                    <div class="chart-header">Performance Overview</div>
+                    <div class="large-chart-container">
+                        <canvas id="performanceChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Results Display -->
+                <div id="resultsContainer" class="hidden">
+                    <div class="health-indicator">
+                        <div class="health-circle" id="healthCircle">
+                            <div class="health-score" id="healthScore">--</div>
+                        </div>
+                    </div>
+                    
+                    <div class="metrics-grid">
+                        <div class="metric-card">
+                            <div class="metric-value" id="avgLatency">--</div>
+                            <div class="metric-label">Avg Latency (s)</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="errorRate">--</div>
+                            <div class="metric-label">Error Rate (%)</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="throughput">--</div>
+                            <div class="metric-label">Throughput (req/s)</div>
+                        </div>
+                        <div class="metric-card">
+                            <div class="metric-value" id="totalRequests">--</div>
+                            <div class="metric-label">Total Requests</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Placeholder State -->
+                <div id="placeholderState" class="placeholder-state">
+                    <div class="placeholder-icon">📊</div>
+                    <div class="placeholder-text">No active tests</div>
+                    <div class="placeholder-subtext">Configure and start a load test to see real-time metrics</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Past Runs -->
+        <div class="card grid-full">
+            <div class="card-header">Test Run History</div>
+            <div class="table-wrapper">
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>Run ID</th>
+                            <th>Target</th>
+                            <th>Users</th>
+                            <th>Duration</th>
+                            <th>Avg Latency</th>
+                            <th>Error Rate</th>
+                            <th>Throughput</th>
+                            <th>Health Score</th>
+                            <th>Trend</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="pastRunsTable">
+                        <tr>
+                            <td colspan="10" class="empty-state">
+                                Loading test history...
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div id="toastContainer"></div>
+
+    <!-- Load JavaScript after Chart.js -->
+    <script src="{{ url_for('static', path='/js/main.js') }}"></script>
+</body>
+</html>
